@@ -7,6 +7,7 @@ import {htmlFor} from '#core/dom/static-template';
 
 import {defineBentoElement} from '#preact/bento-ce';
 
+import {waitFor} from '#testing/helpers/service';
 import {poll} from '#testing/iframe';
 
 describes.realWin(
@@ -50,6 +51,29 @@ describes.realWin(
 
     afterEach(() => {
       win.document.body.removeChild(element);
+    });
+
+    it.only('should react to open attribute', async () => {
+      expect(element.hasAttribute('open')).to.be.false;
+      const api = await element.getApi();
+
+      api.open();
+      await waitForOpen(element, true);
+      expect(element).to.have.attribute('open');
+      expect(isMounted(win, element)).to.equal(true);
+
+      api.close();
+      await waitForOpen(element, false);
+      expect(element).not.to.have.attribute('open');
+      expect(isMounted(win, element)).to.equal(true);
+
+      function isMounted(win, container) {
+        return win.getComputedStyle(container)['display'] !== 'none';
+      }
+      async function waitForOpen(el, open) {
+        const isOpenOrNot = () => el.hasAttribute('open') === open;
+        await waitFor(isOpenOrNot, 'element open updated');
+      }
     });
 
     describe('imperative api', () => {
